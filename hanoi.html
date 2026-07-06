@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ハノイの塔</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#12100d;
+    --bg-1:#1c1712;
+    --wood-dark:#2b1c14;
+    --wood:#4a2f22;
+    --wood-light:#6b4530;
+    --gold:#cda434;
+    --gold-light:#ecd48f;
+    --ivory:#f2e9d8;
+    --jade:#2f6f4e;
+    --jade-light:#4f9d76;
+    --vermillion:#b8433f;
+    --ink:#e9e0cd;
+    --ink-dim:#a99c82;
+    --disk-1:#b8433f;
+    --disk-2:#cda434;
+    --disk-3:#2f6f4e;
+    --disk-4:#3c5a73;
+    --disk-5:#7a4a8f;
+    --disk-6:#c76b3f;
+    --disk-7:#8f9779;
+    --disk-8:#5c4b8a;
+    --radius-s:6px;
+    --radius-m:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(205,164,52,0.10), transparent 60%),
+      linear-gradient(180deg, var(--bg-0), var(--bg-1));
+    color:var(--ink);
+    font-family:"Noto Sans JP", sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 16px 60px;
+  }
+  .title-wrap{
+    text-align:center;
+    margin-bottom:6px;
+  }
+  h1{
+    font-family:"Shippori Mincho", serif;
+    font-weight:700;
+    font-size:clamp(28px,6vw,44px);
+    letter-spacing:0.12em;
+    margin:0;
+    background:linear-gradient(180deg, var(--gold-light), var(--gold));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    text-shadow:0 2px 18px rgba(205,164,52,0.25);
+  }
+  .subtitle{
+    color:var(--ink-dim);
+    font-size:13px;
+    letter-spacing:0.15em;
+    margin-top:4px;
+  }
+  .hairline{
+    width:120px;
+    height:1px;
+    background:linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin:16px 0 22px;
+  }
+
+  .panel{
+    width:100%;
+    max-width:720px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+    border:1px solid rgba(205,164,52,0.18);
+    border-radius:var(--radius-m);
+    padding:16px 18px;
+    margin-bottom:18px;
+  }
+
+  .stage-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    justify-content:center;
+  }
+  .stage-label{
+    font-size:12px;
+    color:var(--ink-dim);
+    letter-spacing:0.1em;
+    margin-right:6px;
+  }
+  .stage-btn{
+    min-width:38px;
+    padding:7px 10px;
+    border-radius:999px;
+    border:1px solid rgba(205,164,52,0.35);
+    background:rgba(0,0,0,0.2);
+    color:var(--ink-dim);
+    font-family:"Noto Sans JP", sans-serif;
+    font-size:14px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .stage-btn:hover{ border-color:var(--gold); color:var(--ink); }
+  .stage-btn.active{
+    background:linear-gradient(180deg, var(--gold-light), var(--gold));
+    color:#241a09;
+    border-color:var(--gold);
+    font-weight:700;
+  }
+
+  .stats-row{
+    display:flex;
+    justify-content:center;
+    gap:28px;
+    margin:16px 0 4px;
+    flex-wrap:wrap;
+  }
+  .stat{
+    text-align:center;
+    min-width:96px;
+  }
+  .stat .num{
+    font-family:"Shippori Mincho", serif;
+    font-size:28px;
+    color:var(--gold-light);
+    line-height:1;
+  }
+  .stat .lbl{
+    font-size:11px;
+    color:var(--ink-dim);
+    letter-spacing:0.1em;
+    margin-top:4px;
+  }
+
+  .actions{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-top:14px;
+  }
+  .btn{
+    padding:9px 18px;
+    border-radius:999px;
+    border:1px solid rgba(205,164,52,0.4);
+    background:rgba(0,0,0,0.25);
+    color:var(--ink);
+    font-family:"Noto Sans JP", sans-serif;
+    font-size:13px;
+    letter-spacing:0.05em;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .btn:hover{ border-color:var(--gold); background:rgba(205,164,52,0.12); }
+  .btn.primary{
+    background:linear-gradient(180deg, var(--gold-light), var(--gold));
+    color:#241a09;
+    font-weight:700;
+    border-color:var(--gold);
+  }
+
+  /* board */
+  .board-wrap{
+    width:100%;
+    max-width:720px;
+    display:flex;
+    justify-content:center;
+    margin-bottom:8px;
+  }
+  .board{
+    position:relative;
+    width:100%;
+    height:280px;
+    background:
+      linear-gradient(180deg, var(--wood-light) 0%, var(--wood) 60%, var(--wood-dark) 100%);
+    border-radius:var(--radius-m);
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.35), 0 12px 30px rgba(0,0,0,0.4);
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-around;
+    padding:0 4%;
+    overflow:visible;
+  }
+  .board::before{
+    content:"";
+    position:absolute;
+    left:3%;
+    right:3%;
+    bottom:34px;
+    height:8px;
+    background:linear-gradient(180deg, var(--wood-dark), #1a1109);
+    border-radius:4px;
+    box-shadow:0 3px 6px rgba(0,0,0,0.4);
+  }
+  .peg-col{
+    position:relative;
+    width:30%;
+    height:100%;
+    display:flex;
+    flex-direction:column-reverse;
+    align-items:center;
+    padding-bottom:42px;
+    cursor:pointer;
+  }
+  .peg-rod{
+    position:absolute;
+    bottom:42px;
+    width:14px;
+    height:190px;
+    border-radius:6px 6px 3px 3px;
+    background:linear-gradient(90deg, rgba(255,255,255,0.15), rgba(0,0,0,0.25));
+    box-shadow:0 4px 8px rgba(0,0,0,0.35);
+  }
+  .peg-col[data-role="start"] .peg-rod{ background:linear-gradient(90deg, var(--jade-light), var(--jade)); }
+  .peg-col[data-role="goal"] .peg-rod{ background:linear-gradient(90deg, var(--gold-light), var(--gold)); }
+  .peg-col[data-role="aux"] .peg-rod{ background:linear-gradient(90deg,#8a7360,#5a473a); }
+
+  .peg-cap{
+    position:absolute;
+    bottom:230px;
+    width:26px;
+    height:12px;
+    border-radius:6px;
+  }
+  .peg-col[data-role="start"] .peg-cap{ background:var(--jade-light); box-shadow:0 0 10px rgba(79,157,118,0.6);}
+  .peg-col[data-role="goal"] .peg-cap{ background:var(--gold-light); box-shadow:0 0 12px rgba(236,212,143,0.7);}
+  .peg-col[data-role="aux"] .peg-cap{ background:#8a7360; }
+
+  .peg-tag{
+    position:absolute;
+    bottom:8px;
+    font-size:11px;
+    letter-spacing:0.1em;
+    color:var(--ink-dim);
+    white-space:nowrap;
+  }
+  .peg-col[data-role="start"] .peg-tag{ color:var(--jade-light); }
+  .peg-col[data-role="goal"] .peg-tag{ color:var(--gold-light); }
+
+  .peg-col.selected .peg-rod{
+    box-shadow:0 0 0 3px rgba(255,255,255,0.5), 0 4px 10px rgba(0,0,0,0.4);
+  }
+  .peg-col.invalid .peg-rod{
+    animation:shake .3s ease;
+  }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    25%{ transform:translateX(-4px); }
+    75%{ transform:translateX(4px); }
+  }
+
+  .disk{
+    height:22px;
+    margin-bottom:4px;
+    border-radius:5px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -3px 4px rgba(0,0,0,0.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
+    color:rgba(0,0,0,0.55);
+    font-weight:700;
+    position:relative;
+    z-index:2;
+    transition:filter .15s ease;
+  }
+  .disk.top-selected{
+    filter:brightness(1.25);
+    transform:translateY(-6px);
+  }
+
+  .message{
+    min-height:20px;
+    text-align:center;
+    font-size:13px;
+    color:var(--vermillion);
+    margin-top:10px;
+    letter-spacing:0.04em;
+  }
+
+  /* rules */
+  .rules h2{
+    font-family:"Shippori Mincho", serif;
+    font-size:17px;
+    color:var(--gold-light);
+    letter-spacing:0.08em;
+    margin:0 0 10px;
+  }
+  .rules ol{
+    margin:0 0 12px;
+    padding-left:20px;
+    line-height:1.9;
+    font-size:14px;
+    color:var(--ink);
+  }
+  .rules p{
+    font-size:13px;
+    color:var(--ink-dim);
+    line-height:1.8;
+    margin:6px 0;
+  }
+  .rules .goal-line{
+    color:var(--gold-light);
+    font-weight:500;
+  }
+
+  /* win overlay */
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(10,8,6,0.72);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  .overlay.show{ display:flex; }
+  .win-card{
+    background:linear-gradient(180deg, var(--bg-1), var(--bg-0));
+    border:1px solid var(--gold);
+    border-radius:var(--radius-m);
+    padding:32px 30px;
+    text-align:center;
+    max-width:380px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  }
+  .win-card .crest{
+    font-size:34px;
+    margin-bottom:8px;
+  }
+  .win-card h3{
+    font-family:"Shippori Mincho", serif;
+    font-size:24px;
+    color:var(--gold-light);
+    margin:0 0 6px;
+    letter-spacing:0.08em;
+  }
+  .win-card p{
+    color:var(--ink-dim);
+    font-size:13px;
+    line-height:1.8;
+    margin:4px 0 20px;
+  }
+  .win-card .win-num{ color:var(--gold-light); font-weight:700; }
+
+  footer{
+    margin-top:26px;
+    font-size:11px;
+    color:#5c5346;
+    letter-spacing:0.08em;
+    text-align:center;
+  }
+
+  @media (max-width:480px){
+    .board{ height:230px; }
+    .peg-rod{ height:150px; }
+    .peg-cap{ bottom:190px; }
+    .disk{ height:18px; font-size:10px; }
+    .stats-row{ gap:16px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="title-wrap">
+    <h1>ハノイの塔</h1>
+    <div class="subtitle">TOWER OF HANOI</div>
+  </div>
+  <div class="hairline"></div>
+
+  <div class="panel">
+    <div class="stage-row" id="stageRow">
+      <span class="stage-label">STAGE</span>
+      <!-- buttons injected by JS -->
+    </div>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="num" id="moveCount">0</div>
+        <div class="lbl">動かした回数</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="minMoves">0</div>
+        <div class="lbl">最短手数</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="diskCount">1</div>
+        <div class="lbl">円盤の枚数</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="resetBtn">やり直す</button>
+    </div>
+    <div class="message" id="message"></div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board">
+      <div class="peg-col" data-peg="0" data-role="start">
+        <div class="peg-cap"></div>
+        <div class="peg-rod"></div>
+        <div class="peg-tag">スタート</div>
+      </div>
+      <div class="peg-col" data-peg="1" data-role="aux">
+        <div class="peg-cap"></div>
+        <div class="peg-rod"></div>
+        <div class="peg-tag">経由</div>
+      </div>
+      <div class="peg-col" data-peg="2" data-role="goal">
+        <div class="peg-cap"></div>
+        <div class="peg-rod"></div>
+        <div class="peg-tag">ゴール</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel rules">
+    <h2>あそびかた・ルール</h2>
+    <p class="goal-line">目的：すべての円盤を、緑色の「スタート」の軸から金色の「ゴール」の軸へ移し替えること。</p>
+    <ol>
+      <li>一度に動かせる円盤は1枚だけです。</li>
+      <li>動かせるのは、それぞれの軸で一番上に乗っている円盤だけです。</li>
+      <li>小さい円盤の上に、それより大きい円盤を重ねることはできません。</li>
+    </ol>
+    <p>軸をクリック（タップ）すると一番上の円盤を選び、次にもう一度別の軸をクリックするとそこへ移動します。同じ軸をもう一度クリックすると選択を解除します。</p>
+    <p>円盤が n 枚のとき、理論上の最短手数は <strong>2ⁿ − 1</strong> 回です。ステージが進むごとに円盤が1枚ずつ増え、最短手数も増えていきます。最短手数ちょうどでゴールできれば「クリア」となります。</p>
+  </div>
+
+  <footer>STAGE 1〜8 · 円盤の枚数がステージ番号になります</footer>
+
+  <div class="overlay" id="overlay">
+    <div class="win-card">
+      <div class="crest">✦</div>
+      <h3 id="winTitle">クリア！</h3>
+      <p id="winText"></p>
+      <div class="actions">
+        <button class="btn" id="retryBtn">もう一度</button>
+        <button class="btn primary" id="nextBtn">次のステージへ</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const MAX_STAGE = 8;
+  const diskColors = ['var(--disk-1)','var(--disk-2)','var(--disk-3)','var(--disk-4)','var(--disk-5)','var(--disk-6)','var(--disk-7)','var(--disk-8)'];
+
+  let stage = 1;
+  let numDisks = 1;
+  let pegs = [[],[],[]];
+  let selected = null;
+  let moveCount = 0;
+  let minMoves = 0;
+  let finished = false;
+
+  const boardEl = document.getElementById('board');
+  const pegEls = Array.from(document.querySelectorAll('.peg-col'));
+  const moveCountEl = document.getElementById('moveCount');
+  const minMovesEl = document.getElementById('minMoves');
+  const diskCountEl = document.getElementById('diskCount');
+  const messageEl = document.getElementById('message');
+  const stageRow = document.getElementById('stageRow');
+  const overlay = document.getElementById('overlay');
+  const winTitle = document.getElementById('winTitle');
+  const winText = document.getElementById('winText');
+
+  function buildStageButtons(){
+    for(let s=1; s<=MAX_STAGE; s++){
+      const b = document.createElement('button');
+      b.className = 'stage-btn';
+      b.textContent = s;
+      b.dataset.stage = s;
+      b.addEventListener('click', ()=> startStage(s));
+      stageRow.appendChild(b);
+    }
+    refreshStageButtons();
+  }
+  function refreshStageButtons(){
+    stageRow.querySelectorAll('.stage-btn').forEach(b=>{
+      b.classList.toggle('active', Number(b.dataset.stage) === stage);
+    });
+  }
+
+  function startStage(s){
+    stage = s;
+    numDisks = s;
+    pegs = [[],[],[]];
+    for(let i=numDisks; i>=1; i--) pegs[0].push(i);
+    selected = null;
+    moveCount = 0;
+    minMoves = Math.pow(2, numDisks) - 1;
+    finished = false;
+    messageEl.textContent = '';
+    overlay.classList.remove('show');
+    refreshStageButtons();
+    render();
+  }
+
+  function render(){
+    moveCountEl.textContent = moveCount;
+    minMovesEl.textContent = minMoves;
+    diskCountEl.textContent = numDisks;
+
+    pegEls.forEach((pegEl, idx)=>{
+      pegEl.querySelectorAll('.disk').forEach(d=>d.remove());
+      const stack = pegs[idx];
+      const maxWidth = 150;
+      const minWidth = 40;
+      stack.forEach((size)=>{
+        const d = document.createElement('div');
+        d.className = 'disk';
+        const width = minWidth + (size-1) * ((maxWidth-minWidth)/Math.max(1,numDisks-1||1));
+        d.style.width = (numDisks===1 ? maxWidth*0.55 : width) + 'px';
+        d.style.background = `linear-gradient(180deg, ${diskColors[(size-1)%diskColors.length]}, ${diskColors[(size-1)%diskColors.length]})`;
+        d.style.filter = 'saturate(1.1)';
+        pegEl.insertBefore(d, pegEl.querySelector('.peg-tag'));
+      });
+      pegEl.classList.toggle('selected', selected === idx);
+    });
+  }
+
+  function flashInvalid(idx){
+    const el = pegEls[idx];
+    el.classList.add('invalid');
+    setTimeout(()=>el.classList.remove('invalid'), 300);
+  }
+
+  function onPegClick(idx){
+    if(finished) return;
+    if(selected === null){
+      if(pegs[idx].length === 0){
+        return;
+      }
+      selected = idx;
+      render();
+      return;
+    }
+    if(selected === idx){
+      selected = null;
+      render();
+      return;
+    }
+    const from = selected;
+    const to = idx;
+    const movingDisk = pegs[from][pegs[from].length-1];
+    const destTop = pegs[to][pegs[to].length-1];
+    if(destTop !== undefined && destTop < movingDisk){
+      flashInvalid(to);
+      selected = null;
+      render();
+      return;
+    }
+    pegs[from].pop();
+    pegs[to].push(movingDisk);
+    moveCount++;
+    selected = null;
+    render();
+    checkWin();
+  }
+
+  function checkWin(){
+    if(pegs[2].length === numDisks){
+      finished = true;
+      const isOptimal = moveCount === minMoves;
+      winTitle.textContent = isOptimal ? 'クリア！最短手数達成' : 'クリア！';
+      winText.innerHTML = isOptimal
+        ? `見事、理論上の最短手数 <span class="win-num">${minMoves}</span> 回ちょうどでゴールしました。`
+        : `<span class="win-num">${moveCount}</span> 回でゴールしました。最短手数は <span class="win-num">${minMoves}</span> 回です。もう一度挑戦して最短を目指しましょう。`;
+      document.getElementById('nextBtn').style.display = stage < MAX_STAGE ? 'inline-block' : 'none';
+      overlay.classList.add('show');
+    }
+  }
+
+  pegEls.forEach((pegEl, idx)=>{
+    pegEl.addEventListener('click', ()=> onPegClick(idx));
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', ()=> startStage(stage));
+  document.getElementById('retryBtn').addEventListener('click', ()=> startStage(stage));
+  document.getElementById('nextBtn').addEventListener('click', ()=>{
+    if(stage < MAX_STAGE) startStage(stage+1);
+  });
+
+  buildStageButtons();
+  startStage(1);
+})();
+</script>
+</body>
+</html>
